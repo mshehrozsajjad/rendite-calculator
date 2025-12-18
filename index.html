@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Professional German property investment analysis tool with detailed cashflow projections, tax calculations, and wealth building metrics.">
+    <meta name="keywords" content="German property investment, Immobilien Rendite, real estate calculator, cashflow analysis">
+    <meta name="author" content="Rendite Pro">
+    <meta property="og:title" content="Rendite Pro - German Property Investment Analysis">
+    <meta property="og:description" content="Professional tool for analyzing German rental property investments">
+    <meta property="og:type" content="website">
+    <title>Rendite Pro | German Property Investment Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e3a5f' rx='15' width='100' height='100'/><text y='.9em' x='50%' text-anchor='middle' font-size='70'>🏠</text></svg>">
+    <style>
+        :root {
+            --bg-primary: #f3f4f6;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f9fafb;
+            --bg-dark: #1e3a5f;
+            --bg-dark-hover: #2d4a6f;
+            --accent: #0369a1;
+            --accent-light: #e0f2fe;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #9ca3af;
+            --border: #e5e7eb;
+            --border-dark: #d1d5db;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .app { display: flex; flex-direction: column; height: 100vh; }
+
+        /* Header */
+        .header {
+            background: var(--bg-dark);
+            color: white;
+            padding: 0 1.5rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .header-brand { display: flex; align-items: center; gap: 0.75rem; }
+
+        .header-logo {
+            width: 32px; height: 32px;
+            background: white;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .header-logo svg { width: 18px; height: 18px; stroke: var(--bg-dark); }
+
+        .header-title { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; }
+        .header-subtitle { font-size: 0.7rem; opacity: 0.7; font-weight: 500; }
+
+        .header-actions { display: flex; gap: 0.5rem; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.375rem;
+            padding: 0.5rem 0.875rem;
+            font-size: 0.75rem; font-weight: 600;
+            border-radius: 6px; cursor: pointer; border: none;
+            transition: all 0.15s; font-family: inherit;
+        }
+
+        .btn svg { width: 14px; height: 14px; }
+        .btn-light { background: rgba(255,255,255,0.15); color: white; }
+        .btn-light:hover { background: rgba(255,255,255,0.25); }
+        .btn-primary { background: white; color: var(--bg-dark); }
+        .btn-primary:hover { background: #f0f0f0; }
+
+        /* Tabs */
+        .tabs {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+            display: flex; gap: 0; flex-shrink: 0;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 0.875rem 1.25rem;
+            font-size: 0.8125rem; font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s; white-space: nowrap;
+        }
+
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* Main Content */
+        .main { flex: 1; overflow: hidden; display: flex; }
+
+        .tab-content {
+            display: none; width: 100%; height: 100%;
+            overflow: auto; padding: 1.25rem;
+        }
+
+        .tab-content.active { display: block; }
+
+        /* Grid */
+        .grid-cols-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .grid-cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .grid-cols-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
+        .grid-cols-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; }
+
+        @media (max-width: 1400px) {
+            .grid-cols-6 { grid-template-columns: repeat(4, 1fr); }
+            .grid-cols-5 { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 1024px) {
+            .grid-cols-6, .grid-cols-5, .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-cols-3 { grid-template-columns: 1fr; }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .card-title {
+            font-size: 0.75rem; font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase; letter-spacing: 0.03em;
+        }
+
+        .card-body {
+            padding: 0.875rem 1rem;
+            max-height: 320px; overflow-y: auto;
+        }
+
+        .card-body::-webkit-scrollbar { width: 4px; }
+        .card-body::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 2px; }
+
+        .card-body-lg { max-height: 400px; }
+        .card-body-full { max-height: none; }
+
+        /* Forms */
+        .form-row {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0.625rem; margin-bottom: 0.625rem;
+        }
+
+        .form-row:last-child { margin-bottom: 0; }
+        .form-row-3 { grid-template-columns: repeat(3, 1fr); }
+        .form-row-1 { grid-template-columns: 1fr; }
+
+        .form-group { display: flex; flex-direction: column; gap: 0.1875rem; }
+
+        .form-label {
+            font-size: 0.6875rem; font-weight: 500;
+            color: var(--text-secondary);
+            display: flex; align-items: center; gap: 0.25rem;
+        }
+
+        .form-input, .form-select {
+            padding: 0.4375rem 0.625rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.8125rem; font-family: inherit;
+            color: var(--text-primary);
+            transition: all 0.15s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+        }
+
+        /* Tooltip */
+        .tip {
+            position: relative;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 12px; height: 12px;
+            background: var(--border); border-radius: 50%;
+            font-size: 0.5625rem; font-weight: 700;
+            color: var(--text-muted); cursor: help;
+        }
+
+        .tip:hover { background: var(--accent); color: white; }
+
+        .tip-text {
+            position: absolute; bottom: calc(100% + 6px); left: 50%;
+            transform: translateX(-50%);
+            width: 180px; padding: 0.5rem;
+            background: var(--text-primary); color: white;
+            font-size: 0.625rem; font-weight: 400; line-height: 1.4;
+            border-radius: 4px;
+            opacity: 0; visibility: hidden;
+            transition: all 0.15s; z-index: 100; pointer-events: none;
+        }
+
+        .tip:hover .tip-text { opacity: 1; visibility: visible; }
+
+        /* Data Tables */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+
+        .data-table th, .data-table td {
+            padding: 0.4375rem 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th {
+            font-size: 0.625rem; font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.03em;
+            background: var(--bg-tertiary);
+            position: sticky; top: 0; z-index: 1;
+        }
+
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table .row-total { background: var(--bg-tertiary); font-weight: 600; }
+        .data-table .row-highlight { background: var(--accent-light); }
+        .data-table .row-success { background: var(--success-light); }
+
+        .text-right { text-align: right !important; }
+        .text-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+        .text-warning { color: var(--warning); }
+        .text-muted { color: var(--text-muted); }
+
+        /* Metrics */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .metric {
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .metric-label {
+            font-size: 0.625rem; font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.03em;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.125rem; font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .metric-value.lg { font-size: 1.375rem; }
+        .metric-value.positive { color: var(--success); }
+        .metric-value.negative { color: var(--danger); }
+        .metric-value.warning { color: var(--warning); }
+
+        .metric-hint { font-size: 0.625rem; color: var(--text-muted); margin-top: 0.125rem; }
+
+        /* Badge */
+        .badge {
+            display: inline-flex; padding: 0.25rem 0.5rem;
+            font-size: 0.625rem; font-weight: 600;
+            border-radius: 100px;
+            text-transform: uppercase; letter-spacing: 0.02em;
+        }
+
+        .badge-success { background: var(--success-light); color: var(--success); }
+        .badge-warning { background: var(--warning-light); color: var(--warning); }
+        .badge-danger { background: var(--danger-light); color: var(--danger); }
+
+        /* Divider */
+        .divider { height: 1px; background: var(--border); margin: 0.75rem 0; }
+
+        /* Spacing */
+        .mb-1 { margin-bottom: 1rem; }
+        .mb-2 { margin-bottom: 1.25rem; }
+        .mt-1 { margin-top: 1rem; }
+
+        /* Projection table scroll */
+        .table-scroll { overflow-x: auto; max-height: 350px; }
+
+        .table-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 3px; }
+
+        .projection-table { min-width: 1100px; }
+
+        .projection-table th:first-child,
+        .projection-table td:first-child {
+            position: sticky; left: 0;
+            background: var(--bg-secondary);
+            z-index: 2; min-width: 150px;
+        }
+
+        .projection-table th:first-child { background: var(--bg-tertiary); z-index: 3; }
+
+        /* Year selector */
+        .year-selector { display: flex; align-items: center; gap: 0.5rem; }
+        .year-selector label { font-size: 0.75rem; font-weight: 500; }
+        .year-selector input {
+            width: 80px; padding: 0.375rem 0.5rem;
+            font-size: 0.8125rem;
+            border: 1px solid var(--border);
+            border-radius: 4px; text-align: center;
+        }
+
+        /* Print */
+        @media print {
+            .header, .tabs { display: none; }
+            .main { overflow: visible; }
+            .tab-content { display: block !important; overflow: visible; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-brand">
+                <div class="header-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M3 21h18M5 21V7l7-4 7 4v14"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="header-title">Rendite Pro</div>
+                    <div class="header-subtitle">Property Investment Analysis v2.0</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-light" onclick="resetForm()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+                    </svg>
+                    Reset
+                </button>
+                <button class="btn btn-primary" onclick="downloadPDF()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export PDF
+                </button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="cockpit">Cockpit</div>
+            <div class="tab" data-tab="inputs">Property & Costs</div>
+            <div class="tab" data-tab="financing">Financing</div>
+            <div class="tab" data-tab="projection">10-Year Projection</div>
+            <div class="tab" data-tab="professional">Professional Metrics</div>
+        </div>
+
+        <main class="main">
+            <!-- COCKPIT TAB -->
+            <div class="tab-content active" id="tab-cockpit">
+                <div class="grid-cols-6 mb-2">
+                    <div class="metric">
+                        <div class="metric-label">Gross Yield</div>
+                        <div class="metric-value lg" id="m-grossYield">--%</div>
+                        <div class="metric-hint">Annual rent / Price</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Net Yield</div>
+                        <div class="metric-value lg" id="m-netYield">--%</div>
+                        <div class="metric-hint">After all costs</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Price Factor</div>
+                        <div class="metric-value lg" id="m-factor">--x</div>
+                        <div class="metric-hint">Purchase / Annual rent</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Cash-on-Cash</div>
+                        <div class="metric-value lg" id="m-coc">--%</div>
+                        <div class="metric-hint">Return on equity</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Monthly Cashflow</div>
+                        <div class="metric-value lg" id="m-cashflow">--€</div>
+                        <div class="metric-hint">After tax</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Wealth Growth/Year</div>
+                        <div class="metric-value lg" id="m-wealth">--€</div>
+                        <div class="metric-hint">Equity + CF + Appreciation</div>
+                    </div>
+                </div>
+
+                <div class="grid-cols-5 mb-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Investment Summary</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-investment"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Monthly Rent</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-rent"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Operating Costs / Month</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-costs"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Financing</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-financing"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Monthly Cashflow</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-cashflow"></tbody></table></div>
+                    </div>
+                </div>
+
+                <div class="grid-cols-3">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Tax Calculation (Monthly)</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-tax"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Return Metrics</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-returns"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Annual Wealth Building</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-wealth"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INPUTS TAB -->
+            <div class="tab-content" id="tab-inputs">
+                <div class="grid-cols-4 mb-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Property Details</div></div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Property Name / Address</label>
+                                    <input type="text" class="form-input" id="i-address" placeholder="e.g., Leipzig Apartment">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Purchase Date</label>
+                                    <input type="date" class="form-input" id="i-date">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Living Area (m²)</label>
+                                    <input type="number" class="form-input" id="i-sqm" value="83" step="0.1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Parking Spaces</label>
+                                    <input type="number" class="form-input" id="i-parking" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Purchase Price (€)</label>
+                                    <input type="number" class="form-input" id="i-price" value="273000" step="1000">
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Broker Fee (%)</label>
+                                    <input type="number" class="form-input" id="i-broker" value="3.57" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Notary Fee (%)</label>
+                                    <input type="number" class="form-input" id="i-notary" value="1.5" step="0.1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Land Registry (%)</label>
+                                    <input type="number" class="form-input" id="i-registry" value="0.5" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Transfer Tax (%)</label>
+                                    <input type="number" class="form-input" id="i-transferTax" value="5" step="0.5">
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Other Acquisition Costs (€)</label>
+                                    <input type="number" class="form-input" id="i-otherCosts" value="0" step="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Initial Investments</div></div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Kitchen (€)</label>
+                                    <input type="number" class="form-input" id="i-kitchen" value="0" step="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Renovation (€)</label>
+                                    <input type="number" class="form-input" id="i-reno" value="0" step="100">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Furniture (€)</label>
+                                    <input type="number" class="form-input" id="i-furniture" value="0" step="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Other (€)</label>
+                                    <input type="number" class="form-input" id="i-otherInvest" value="0" step="100">
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Total Initial Investments</label>
+                                    <div class="text-mono" id="d-initInvest">0 €</div>
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">15% Rule Limit</label>
+                                    <div class="text-mono" id="d-15limit">0 €</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Target Rent</div></div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Rent per m² (€/m²)</label>
+                                    <input type="number" class="form-input" id="i-rentSqm" value="11.5" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Calculated Rent</label>
+                                    <div class="text-mono" id="d-calcRent">0 €</div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Parking Income (€/mo)</label>
+                                    <input type="number" class="form-input" id="i-parkingRent" value="50" step="5">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Other Income (€/mo)</label>
+                                    <input type="number" class="form-input" id="i-otherIncome" value="0" step="10">
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Net Cold Rent (Nettokaltmiete)</label>
+                                    <div class="text-mono text-success" id="d-netColdRent">0 €</div>
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Allocable Costs</label>
+                                    <div class="text-mono" id="d-allocable">0 €</div>
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Warm Rent (Warmmiete)</label>
+                                    <div class="text-mono text-success" id="d-warmRent">0 €</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Operating Costs</div></div>
+                        <div class="card-body card-body-full">
+                            <p style="font-size: 0.6875rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">ALLOCABLE TO TENANT</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Hausgeld - Allocable (€)</label>
+                                    <input type="number" class="form-input" id="i-hgAlloc" value="0" step="10">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Property Tax (€/mo)</label>
+                                    <input type="number" class="form-input" id="i-propTax" value="0" step="5">
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <p style="font-size: 0.6875rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">NON-ALLOCABLE (YOUR COST)</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Hausgeld - Non-Alloc. (€)</label>
+                                    <input type="number" class="form-input" id="i-hgNonAlloc" value="133" step="10">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">WEG Reserve (€/mo)</label>
+                                    <input type="number" class="form-input" id="i-wegReserve" value="0" step="5">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Own Maintenance (€/m²/yr)</label>
+                                    <input type="number" class="form-input" id="i-ownMaint" value="0" step="1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Vacancy Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-vacancy" value="0" step="0.5">
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Other Non-Allocable (€/mo)</label>
+                                    <input type="number" class="form-input" id="i-otherNonAlloc" value="0" step="10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-cols-4">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Tax & Depreciation</div></div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">AfA Rate (%)</label>
+                                    <select class="form-select" id="i-afa">
+                                        <option value="2">2% (post-1924)</option>
+                                        <option value="2.5">2.5% (pre-1925)</option>
+                                        <option value="3">3% (new 2023+)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Building Share (%)</label>
+                                    <input type="number" class="form-input" id="i-bldShare" value="85" step="1">
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Depreciation Base</label>
+                                    <div class="text-mono" id="d-depBase">0 €</div>
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Annual Depreciation (AfA)</label>
+                                    <div class="text-mono text-success" id="d-annualAfa">0 €</div>
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Personal Tax Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-taxRate" value="42" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Forecast Assumptions</div></div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Cost Increase (%/yr)</label>
+                                    <input type="number" class="form-input" id="i-costInc" value="2" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rent Increase (%/yr)</label>
+                                    <input type="number" class="form-input" id="i-rentInc" value="2" step="0.1">
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Property Appreciation (%/yr)</label>
+                                    <input type="number" class="form-input" id="i-appreciation" value="2" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Price Analysis</div></div>
+                        <div class="card-body card-body-full">
+                            <table class="data-table">
+                                <tbody id="t-priceAnalysis"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Total Investment</div></div>
+                        <div class="card-body card-body-full">
+                            <table class="data-table"><tbody id="t-totalInvest"></tbody></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINANCING TAB -->
+            <div class="tab-content" id="tab-financing">
+                <div class="grid-cols-3 mb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Loan 1 (Primary)</div>
+                            <label style="font-size: 0.6875rem; display: flex; align-items: center; gap: 0.25rem;">
+                                <input type="checkbox" id="i-loan1-enabled" checked> Active
+                            </label>
+                        </div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Loan Amount (€)</label>
+                                    <input type="number" class="form-input" id="i-loan1-amount" value="273000" step="1000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">% of Purchase</label>
+                                    <div class="text-mono" id="d-loan1-pct">100%</div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Interest Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-loan1-rate" value="4" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Repayment Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-loan1-repay" value="1.30" step="0.01">
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Monthly Payment</label>
+                                    <div class="text-mono" id="d-loan1-payment">0 €</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Payoff Year</label>
+                                    <div class="text-mono" id="d-loan1-payoff">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Loan 2 (Secondary)</div>
+                            <label style="font-size: 0.6875rem; display: flex; align-items: center; gap: 0.25rem;">
+                                <input type="checkbox" id="i-loan2-enabled"> Active
+                            </label>
+                        </div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Loan Amount (€)</label>
+                                    <input type="number" class="form-input" id="i-loan2-amount" value="0" step="1000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">% of Purchase</label>
+                                    <div class="text-mono" id="d-loan2-pct">0%</div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Interest Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-loan2-rate" value="2" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Repayment Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-loan2-repay" value="8" step="0.01">
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Monthly Payment</label>
+                                    <div class="text-mono" id="d-loan2-payment">0 €</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Payoff Year</label>
+                                    <div class="text-mono" id="d-loan2-payoff">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Loan 3 (Additional)</div>
+                            <label style="font-size: 0.6875rem; display: flex; align-items: center; gap: 0.25rem;">
+                                <input type="checkbox" id="i-loan3-enabled"> Active
+                            </label>
+                        </div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Loan Amount (€)</label>
+                                    <input type="number" class="form-input" id="i-loan3-amount" value="0" step="1000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">% of Purchase</label>
+                                    <div class="text-mono" id="d-loan3-pct">0%</div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Interest Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-loan3-rate" value="3" step="0.01">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Repayment Rate (%)</label>
+                                    <input type="number" class="form-input" id="i-loan3-repay" value="5" step="0.01">
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Monthly Payment</label>
+                                    <div class="text-mono" id="d-loan3-payment">0 €</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Payoff Year</label>
+                                    <div class="text-mono" id="d-loan3-payoff">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-cols-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Total Financing</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-finSummary"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Equity Position</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-equity"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROJECTION TAB -->
+            <div class="tab-content" id="tab-projection">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">10-Year Cashflow Projection</div>
+                        <span class="badge badge-success" id="b-projection">--</span>
+                    </div>
+                    <div class="card-body card-body-full">
+                        <div class="table-scroll">
+                            <table class="data-table projection-table">
+                                <thead id="proj-head"></thead>
+                                <tbody id="proj-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFESSIONAL TAB -->
+            <div class="tab-content" id="tab-professional">
+                <div class="grid-cols-3 mb-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Future Metrics</div>
+                            <div class="year-selector">
+                                <label>Year:</label>
+                                <input type="number" id="i-futureYear" value="10" min="1" max="30">
+                            </div>
+                        </div>
+                        <div class="card-body card-body-lg"><table class="data-table"><tbody id="t-future"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Break-Even Analysis</div></div>
+                        <div class="card-body card-body-lg"><table class="data-table"><tbody id="t-breakeven"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Interest Rate Risk</div></div>
+                        <div class="card-body card-body-lg"><table class="data-table"><tbody id="t-interestRisk"></tbody></table></div>
+                    </div>
+                </div>
+
+                <div class="grid-cols-3">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Valuation by Rent Factor</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-valuation"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Wealth Position (Year End)</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-wealthPos"></tbody></table></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Equity & Loan Reserve</div></div>
+                        <div class="card-body"><table class="data-table"><tbody id="t-loanReserve"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let R = {};
+
+        const $ = id => document.getElementById(id);
+        const val = id => parseFloat($(id)?.value) || 0;
+        const chk = id => $(id)?.checked || false;
+        const fmt = n => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+        const fmt2 = n => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+        const pct = (n, d=2) => n.toFixed(d) + '%';
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                $('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        function calculate() {
+            const sqm = val('i-sqm');
+            const price = val('i-price');
+            const broker = val('i-broker');
+            const notary = val('i-notary');
+            const registry = val('i-registry');
+            const transferTax = val('i-transferTax');
+            const otherCosts = val('i-otherCosts');
+
+            const kitchen = val('i-kitchen');
+            const reno = val('i-reno');
+            const furniture = val('i-furniture');
+            const otherInvest = val('i-otherInvest');
+            const initInvest = kitchen + reno + furniture + otherInvest;
+
+            const brokerCost = price * broker / 100;
+            const notaryCost = price * notary / 100;
+            const registryCost = price * registry / 100;
+            const transferTaxCost = price * transferTax / 100;
+            const totalAcqCosts = brokerCost + notaryCost + registryCost + transferTaxCost + otherCosts;
+            const acqCostsPct = (totalAcqCosts / price) * 100;
+            const totalInvestment = price + totalAcqCosts + initInvest;
+            const limit15 = price * 0.15;
+
+            const rentSqm = val('i-rentSqm');
+            const calcRent = sqm * rentSqm;
+            const parkingRent = val('i-parkingRent');
+            const otherIncome = val('i-otherIncome');
+            const netColdRent = calcRent + parkingRent + otherIncome;
+
+            const hgAlloc = val('i-hgAlloc');
+            const propTax = val('i-propTax');
+            const allocableCosts = hgAlloc + propTax;
+
+            const hgNonAlloc = val('i-hgNonAlloc');
+            const wegReserve = val('i-wegReserve');
+            const ownMaint = val('i-ownMaint');
+            const ownMaintMo = (ownMaint * sqm) / 12;
+            const vacancy = val('i-vacancy');
+            const vacancyCost = netColdRent * vacancy / 100;
+            const otherNonAlloc = val('i-otherNonAlloc');
+            const nonAllocCosts = hgNonAlloc + wegReserve + ownMaintMo + vacancyCost + otherNonAlloc;
+            const warmRent = netColdRent + allocableCosts;
+
+            const afaRate = val('i-afa');
+            const bldShare = val('i-bldShare');
+            const depBase = price * bldShare / 100;
+            const annualAfa = depBase * afaRate / 100;
+            const monthlyAfa = annualAfa / 12;
+            const taxRate = val('i-taxRate');
+
+            const costInc = val('i-costInc');
+            const rentInc = val('i-rentInc');
+            const appreciation = val('i-appreciation');
+
+            const loans = [];
+            for (let i = 1; i <= 3; i++) {
+                if (chk(`i-loan${i}-enabled`)) {
+                    const amt = val(`i-loan${i}-amount`);
+                    const rate = val(`i-loan${i}-rate`);
+                    const repay = val(`i-loan${i}-repay`);
+                    const payment = amt * (rate + repay) / 100 / 12;
+                    const interest = amt * rate / 100 / 12;
+                    const principal = amt * repay / 100 / 12;
+                    const payoffYears = repay > 0 ? Math.ceil(100 / repay) : 999;
+                    loans.push({ amt, rate, repay, payment, interest, principal, payoffYears });
+                } else {
+                    loans.push({ amt: 0, rate: 0, repay: 0, payment: 0, interest: 0, principal: 0, payoffYears: 0 });
+                }
+            }
+
+            const totalLoan = loans.reduce((s, l) => s + l.amt, 0);
+            const totalPayment = loans.reduce((s, l) => s + l.payment, 0);
+            const totalInterest = loans.reduce((s, l) => s + l.interest, 0);
+            const totalPrincipal = loans.reduce((s, l) => s + l.principal, 0);
+            const weightedRate = totalLoan > 0 ? loans.reduce((s, l) => s + l.amt * l.rate, 0) / totalLoan : 0;
+            const weightedRepay = totalLoan > 0 ? loans.reduce((s, l) => s + l.amt * l.repay, 0) / totalLoan : 0;
+            const equity = totalInvestment - totalLoan;
+            const ltv = totalLoan / totalInvestment * 100;
+
+            const opCashflow = netColdRent - nonAllocCosts - totalPayment;
+            const taxableCashflow = warmRent - (nonAllocCosts - ownMaintMo) - totalInterest - monthlyAfa;
+            const monthlyTax = taxableCashflow * taxRate / 100;
+            const cashflowAfterTax = opCashflow - (taxableCashflow > 0 ? monthlyTax : 0) + (taxableCashflow < 0 ? Math.abs(taxableCashflow) * taxRate / 100 : 0);
+
+            const annualRent = netColdRent * 12;
+            const grossYield = (annualRent / price) * 100;
+            const netYield = ((netColdRent - nonAllocCosts) * 12 / totalInvestment) * 100;
+            const factor = annualRent > 0 ? price / annualRent : 0;
+            const coc = equity > 0 ? (cashflowAfterTax * 12 / equity) * 100 : 0;
+
+            const annualPrincipal = totalPrincipal * 12;
+            const annualCashflow = cashflowAfterTax * 12;
+            const annualAppreciation = price * appreciation / 100;
+            const wealthGrowth = annualPrincipal + annualCashflow + annualAppreciation;
+            const wealthNoApp = annualPrincipal + annualCashflow;
+
+            R = {
+                sqm, price, totalAcqCosts, acqCostsPct, initInvest, limit15, totalInvestment,
+                brokerCost, notaryCost, registryCost, transferTaxCost, otherCosts,
+                netColdRent, parkingRent, calcRent, allocableCosts, nonAllocCosts, warmRent,
+                hgNonAlloc, wegReserve, ownMaintMo, vacancyCost, otherNonAlloc,
+                afaRate, bldShare, depBase, annualAfa, monthlyAfa, taxRate,
+                costInc, rentInc, appreciation,
+                loans, totalLoan, totalPayment, totalInterest, totalPrincipal, weightedRate, weightedRepay, equity, ltv,
+                opCashflow, taxableCashflow, monthlyTax, cashflowAfterTax,
+                grossYield, netYield, factor, coc, annualRent,
+                wealthGrowth, wealthNoApp, annualPrincipal, annualCashflow, annualAppreciation,
+                rentSqm, broker, notary, registry, transferTax
+            };
+
+            updateUI();
+            generateProjection();
+            updateProfessional();
+        }
+
+        function updateUI() {
+            $('d-initInvest').textContent = fmt(R.initInvest);
+            $('d-15limit').textContent = fmt(R.limit15);
+            $('d-calcRent').textContent = fmt(R.calcRent);
+            $('d-netColdRent').textContent = fmt(R.netColdRent);
+            $('d-allocable').textContent = fmt(R.allocableCosts);
+            $('d-warmRent').textContent = fmt(R.warmRent);
+            $('d-depBase').textContent = fmt(R.depBase);
+            $('d-annualAfa').textContent = fmt(R.annualAfa) + '/yr';
+
+            for (let i = 1; i <= 3; i++) {
+                const l = R.loans[i-1];
+                $(`d-loan${i}-pct`).textContent = pct(R.price > 0 ? l.amt / R.price * 100 : 0, 1);
+                $(`d-loan${i}-payment`).textContent = fmt(l.payment);
+                $(`d-loan${i}-payoff`).textContent = l.payoffYears > 0 && l.payoffYears < 100 ? (new Date().getFullYear() + l.payoffYears) : '--';
+            }
+
+            $('t-priceAnalysis').innerHTML = `
+                <tr><td>Price per m²</td><td class="text-right text-mono">${fmt(R.price / R.sqm)}</td></tr>
+                <tr><td>Rent per m²</td><td class="text-right text-mono">${fmt2(R.rentSqm)}</td></tr>
+                <tr><td>Acquisition Costs</td><td class="text-right text-mono">${pct(R.acqCostsPct, 1)}</td></tr>
+                <tr><td>Price Factor</td><td class="text-right text-mono">${R.factor.toFixed(1)}x</td></tr>
+            `;
+
+            $('t-totalInvest').innerHTML = `
+                <tr><td>Purchase Price</td><td class="text-right text-mono">${fmt(R.price)}</td></tr>
+                <tr><td>Broker (${R.broker}%)</td><td class="text-right text-mono">${fmt(R.brokerCost)}</td></tr>
+                <tr><td>Notary (${R.notary}%)</td><td class="text-right text-mono">${fmt(R.notaryCost)}</td></tr>
+                <tr><td>Land Registry</td><td class="text-right text-mono">${fmt(R.registryCost)}</td></tr>
+                <tr><td>Transfer Tax (${R.transferTax}%)</td><td class="text-right text-mono">${fmt(R.transferTaxCost)}</td></tr>
+                <tr><td>Other Costs</td><td class="text-right text-mono">${fmt(R.otherCosts)}</td></tr>
+                <tr><td>Initial Investments</td><td class="text-right text-mono">${fmt(R.initInvest)}</td></tr>
+                <tr class="row-total"><td>Total Investment</td><td class="text-right text-mono">${fmt(R.totalInvestment)}</td></tr>
+            `;
+
+            $('t-finSummary').innerHTML = `
+                <tr><td>Total Loans</td><td class="text-right text-mono">${fmt(R.totalLoan)}</td></tr>
+                <tr><td>Weighted Interest Rate</td><td class="text-right text-mono">${pct(R.weightedRate)}</td></tr>
+                <tr><td>Weighted Repayment</td><td class="text-right text-mono">${pct(R.weightedRepay)}</td></tr>
+                <tr><td>Monthly Payment</td><td class="text-right text-mono">${fmt(R.totalPayment)}</td></tr>
+                <tr><td>- Interest</td><td class="text-right text-mono text-danger">${fmt(R.totalInterest)}</td></tr>
+                <tr><td>- Principal</td><td class="text-right text-mono text-success">${fmt(R.totalPrincipal)}</td></tr>
+            `;
+
+            $('t-equity').innerHTML = `
+                <tr><td>Total Investment</td><td class="text-right text-mono">${fmt(R.totalInvestment)}</td></tr>
+                <tr><td>Total Loans</td><td class="text-right text-mono">${fmt(R.totalLoan)}</td></tr>
+                <tr class="row-total"><td>Equity Required</td><td class="text-right text-mono">${fmt(R.equity)}</td></tr>
+                <tr><td>LTV Ratio</td><td class="text-right text-mono">${pct(R.ltv, 1)}</td></tr>
+            `;
+
+            const setM = (id, val, cls) => { $(id).textContent = val; $(id).className = 'metric-value lg ' + cls; };
+            setM('m-grossYield', pct(R.grossYield), R.grossYield > 5 ? 'positive' : R.grossYield < 3 ? 'negative' : 'warning');
+            setM('m-netYield', pct(R.netYield), R.netYield > 3 ? 'positive' : R.netYield < 1 ? 'negative' : 'warning');
+            setM('m-factor', R.factor.toFixed(1) + 'x', R.factor < 20 ? 'positive' : R.factor > 25 ? 'negative' : 'warning');
+            setM('m-coc', pct(R.coc), R.coc > 5 ? 'positive' : R.coc < 0 ? 'negative' : 'warning');
+            setM('m-cashflow', fmt(R.cashflowAfterTax), R.cashflowAfterTax >= 0 ? 'positive' : 'negative');
+            setM('m-wealth', fmt(R.wealthGrowth), 'positive');
+
+            $('t-investment').innerHTML = `
+                <tr><td>Purchase Price</td><td class="text-right text-mono">${fmt(R.price)}</td></tr>
+                <tr><td>Acquisition Costs</td><td class="text-right text-mono">${fmt(R.totalAcqCosts)}</td></tr>
+                <tr><td>Initial Investments</td><td class="text-right text-mono">${fmt(R.initInvest)}</td></tr>
+                <tr class="row-total"><td>Total</td><td class="text-right text-mono">${fmt(R.totalInvestment)}</td></tr>
+                <tr><td>Equity</td><td class="text-right text-mono">${fmt(R.equity)}</td></tr>
+                <tr><td>Loans</td><td class="text-right text-mono">${fmt(R.totalLoan)}</td></tr>
+            `;
+
+            $('t-rent').innerHTML = `
+                <tr><td>Rent (${R.sqm} m² × ${fmt2(R.rentSqm)})</td><td class="text-right text-mono">${fmt(R.calcRent)}</td></tr>
+                <tr><td>Parking</td><td class="text-right text-mono">${fmt(R.parkingRent)}</td></tr>
+                <tr class="row-highlight"><td>Net Cold Rent</td><td class="text-right text-mono">${fmt(R.netColdRent)}</td></tr>
+                <tr><td>+ Allocable Costs</td><td class="text-right text-mono">${fmt(R.allocableCosts)}</td></tr>
+                <tr class="row-total"><td>Warm Rent</td><td class="text-right text-mono">${fmt(R.warmRent)}</td></tr>
+            `;
+
+            $('t-costs').innerHTML = `
+                <tr><td>Hausgeld (non-alloc)</td><td class="text-right text-mono text-danger">${fmt(R.hgNonAlloc)}</td></tr>
+                <tr><td>WEG Reserve</td><td class="text-right text-mono text-danger">${fmt(R.wegReserve)}</td></tr>
+                <tr><td>Own Maintenance</td><td class="text-right text-mono text-danger">${fmt(R.ownMaintMo)}</td></tr>
+                <tr><td>Vacancy Loss</td><td class="text-right text-mono text-danger">${fmt(R.vacancyCost)}</td></tr>
+                <tr><td>Other</td><td class="text-right text-mono text-danger">${fmt(R.otherNonAlloc)}</td></tr>
+                <tr class="row-total"><td>Total Non-Allocable</td><td class="text-right text-mono">${fmt(R.nonAllocCosts)}</td></tr>
+            `;
+
+            $('t-financing').innerHTML = `
+                <tr><td>Total Loans</td><td class="text-right text-mono">${fmt(R.totalLoan)}</td></tr>
+                <tr><td>Avg. Interest</td><td class="text-right text-mono">${pct(R.weightedRate)}</td></tr>
+                <tr><td>Avg. Repayment</td><td class="text-right text-mono">${pct(R.weightedRepay)}</td></tr>
+                <tr class="row-total"><td>Monthly Payment</td><td class="text-right text-mono">${fmt(R.totalPayment)}</td></tr>
+            `;
+
+            $('t-cashflow').innerHTML = `
+                <tr><td>Warm Rent</td><td class="text-right text-mono text-success">${fmt(R.warmRent)}</td></tr>
+                <tr><td>Operating Costs</td><td class="text-right text-mono text-danger">-${fmt(R.nonAllocCosts)}</td></tr>
+                <tr><td>Interest</td><td class="text-right text-mono text-danger">-${fmt(R.totalInterest)}</td></tr>
+                <tr><td>Principal</td><td class="text-right text-mono text-muted">-${fmt(R.totalPrincipal)}</td></tr>
+                <tr><td>= Operational CF</td><td class="text-right text-mono">${fmt(R.opCashflow)}</td></tr>
+                <tr><td>Tax Effect</td><td class="text-right text-mono ${R.taxableCashflow < 0 ? 'text-success' : 'text-danger'}">${R.taxableCashflow < 0 ? '+' : '-'}${fmt(Math.abs(R.monthlyTax))}</td></tr>
+                <tr class="row-success"><td>After Tax</td><td class="text-right text-mono">${fmt(R.cashflowAfterTax)}</td></tr>
+            `;
+
+            $('t-tax').innerHTML = `
+                <tr><td>Warm Rent</td><td class="text-right text-mono">${fmt(R.warmRent)}</td></tr>
+                <tr><td>Op. Costs (excl. reserve)</td><td class="text-right text-mono">-${fmt(R.nonAllocCosts - R.ownMaintMo)}</td></tr>
+                <tr><td>Interest</td><td class="text-right text-mono">-${fmt(R.totalInterest)}</td></tr>
+                <tr><td>Depreciation (AfA)</td><td class="text-right text-mono">-${fmt(R.monthlyAfa)}</td></tr>
+                <tr class="row-highlight"><td>Taxable Income</td><td class="text-right text-mono ${R.taxableCashflow < 0 ? 'text-success' : ''}">${fmt(R.taxableCashflow)}</td></tr>
+                <tr><td>Tax Rate</td><td class="text-right text-mono">${pct(R.taxRate, 0)}</td></tr>
+                <tr class="row-total"><td>Tax / (Savings)</td><td class="text-right text-mono ${R.taxableCashflow < 0 ? 'text-success' : 'text-danger'}">${R.taxableCashflow < 0 ? '+' + fmt(Math.abs(R.monthlyTax)) : '-' + fmt(R.monthlyTax)}</td></tr>
+            `;
+
+            $('t-returns').innerHTML = `
+                <tr><td>Annual Cold Rent</td><td class="text-right text-mono">${fmt(R.annualRent)}</td></tr>
+                <tr><td>Gross Yield</td><td class="text-right text-mono ${R.grossYield > 5 ? 'text-success' : ''}">${pct(R.grossYield)}</td></tr>
+                <tr><td>Price Factor</td><td class="text-right text-mono">${R.factor.toFixed(1)}x</td></tr>
+                <tr><td>Net Yield</td><td class="text-right text-mono ${R.netYield > 3 ? 'text-success' : ''}">${pct(R.netYield)}</td></tr>
+                <tr class="row-highlight"><td>Cash-on-Cash Return</td><td class="text-right text-mono ${R.coc > 0 ? 'text-success' : 'text-danger'}">${pct(R.coc)}</td></tr>
+            `;
+
+            $('t-wealth').innerHTML = `
+                <tr><td>Principal Paydown</td><td class="text-right text-mono text-success">${fmt(R.annualPrincipal)}</td></tr>
+                <tr><td>Net Cashflow</td><td class="text-right text-mono ${R.annualCashflow >= 0 ? 'text-success' : 'text-danger'}">${fmt(R.annualCashflow)}</td></tr>
+                <tr><td>Appreciation (${pct(R.appreciation, 0)})</td><td class="text-right text-mono text-success">${fmt(R.annualAppreciation)}</td></tr>
+                <tr class="row-success"><td>Total Wealth Growth</td><td class="text-right text-mono">${fmt(R.wealthGrowth)}</td></tr>
+                <tr><td>Without Appreciation</td><td class="text-right text-mono">${fmt(R.wealthNoApp)}</td></tr>
+            `;
+        }
+
+        function generateProjection() {
+            const years = [];
+            const curYear = new Date().getFullYear();
+            let rent = R.netColdRent;
+            let costs = R.nonAllocCosts;
+            let propertyValue = R.price;
+            let cumCF = 0, cumEq = 0;
+            let loanBalances = R.loans.map(l => l.amt);
+
+            for (let i = 0; i <= 10; i++) {
+                if (i > 0) {
+                    rent *= (1 + R.rentInc / 100);
+                    costs *= (1 + R.costInc / 100);
+                    propertyValue *= (1 + R.appreciation / 100);
+                }
+
+                const warmRent = rent + R.allocableCosts;
+                const yIncome = rent * 12;
+                const yCosts = costs * 12;
+                
+                let yInterest = 0, yPrincipal = 0;
+                for (let j = 0; j < 3; j++) {
+                    if (loanBalances[j] > 0) {
+                        const l = R.loans[j];
+                        const annInt = loanBalances[j] * l.rate / 100;
+                        const annPrin = Math.min(loanBalances[j], loanBalances[j] * l.repay / 100);
+                        yInterest += annInt;
+                        yPrincipal += annPrin;
+                        loanBalances[j] -= annPrin;
+                    }
+                }
+
+                const yDebt = yInterest + yPrincipal;
+                const yCFPre = yIncome - yCosts - yDebt;
+                const yAfa = R.annualAfa;
+                const taxableInc = yIncome - yCosts + R.allocableCosts * 12 - yInterest - yAfa;
+                const tax = taxableInc > 0 ? taxableInc * R.taxRate / 100 : 0;
+                const taxSave = taxableInc < 0 ? Math.abs(taxableInc) * R.taxRate / 100 : 0;
+                const yCFPost = yCFPre - tax + taxSave;
+
+                cumCF += yCFPost;
+                cumEq += yPrincipal;
+                const totalDebt = loanBalances.reduce((s, b) => s + b, 0);
+
+                years.push({
+                    year: curYear + i, rent, warmRent, yIncome, yCosts, yInterest, yPrincipal, yDebt,
+                    yCFPre, yAfa, taxableInc, tax, taxSave, yCFPost, cumCF, cumEq, totalDebt, propertyValue
+                });
+            }
+
+            R.projection = years;
+
+            let head = '<tr><th>Item</th>';
+            for (let i = 1; i <= 10; i++) head += `<th>${years[i].year}</th>`;
+            head += '</tr>';
+            $('proj-head').innerHTML = head;
+
+            const row = (label, getter, cls = '') => {
+                let r = `<tr class="${cls}"><td>${label}</td>`;
+                for (let i = 1; i <= 10; i++) r += `<td class="text-right text-mono">${getter(years[i])}</td>`;
+                return r + '</tr>';
+            };
+
+            $('proj-body').innerHTML = 
+                row('Rental Income', y => fmt(y.yIncome)) +
+                row('Operating Costs', y => `<span class="text-danger">-${fmt(y.yCosts)}</span>`) +
+                row('Interest', y => `<span class="text-danger">-${fmt(y.yInterest)}</span>`) +
+                row('Principal', y => `<span class="text-muted">-${fmt(y.yPrincipal)}</span>`) +
+                row('Cashflow Pre-Tax', y => `<span class="${y.yCFPre >= 0 ? 'text-success' : 'text-danger'}">${fmt(y.yCFPre)}</span>`, 'row-highlight') +
+                row('AfA Depreciation', y => fmt(y.yAfa)) +
+                row('Taxable Income', y => `<span class="${y.taxableInc < 0 ? 'text-success' : ''}">${fmt(y.taxableInc)}</span>`) +
+                row('Tax / Savings', y => y.taxableInc < 0 ? `<span class="text-success">+${fmt(y.taxSave)}</span>` : `<span class="text-danger">-${fmt(y.tax)}</span>`) +
+                row('Cashflow After Tax', y => `<span class="${y.yCFPost >= 0 ? 'text-success' : 'text-danger'}">${fmt(y.yCFPost)}</span>`, 'row-success') +
+                row('Remaining Debt', y => fmt(y.totalDebt)) +
+                row('Property Value', y => fmt(y.propertyValue)) +
+                row('Cumulative CF', y => `<span class="${y.cumCF >= 0 ? 'text-success' : 'text-danger'}">${fmt(y.cumCF)}</span>`) +
+                row('Equity Built', y => `<span class="text-success">${fmt(y.cumEq)}</span>`, 'row-highlight');
+
+            const y10 = years[10];
+            $('b-projection').textContent = y10.yCFPost >= 0 ? 'Positive CF' : 'Negative CF';
+            $('b-projection').className = 'badge ' + (y10.yCFPost >= 0 ? 'badge-success' : 'badge-danger');
+        }
+
+        function updateProfessional() {
+            const futureYear = val('i-futureYear');
+            const idx = Math.min(futureYear, R.projection.length - 1);
+            const y = R.projection[idx] || R.projection[R.projection.length - 1];
+
+            $('t-future').innerHTML = `
+                <tr><td>Analysis Year</td><td class="text-right text-mono">${y.year}</td></tr>
+                <tr><td>Years from Purchase</td><td class="text-right text-mono">${idx}</td></tr>
+                <tr class="row-highlight"><td>Annual Rent</td><td class="text-right text-mono">${fmt(y.yIncome)}</td></tr>
+                <tr><td>Monthly Rent</td><td class="text-right text-mono">${fmt(y.rent)}</td></tr>
+                <tr><td>Rent per m²</td><td class="text-right text-mono">${fmt2(y.rent / R.sqm)}</td></tr>
+                <tr class="row-highlight"><td>Property Value</td><td class="text-right text-mono">${fmt(y.propertyValue)}</td></tr>
+                <tr><td>Value per m²</td><td class="text-right text-mono">${fmt(y.propertyValue / R.sqm)}</td></tr>
+                <tr class="row-success"><td>Monthly Cashflow</td><td class="text-right text-mono">${fmt(y.yCFPost / 12)}</td></tr>
+            `;
+
+            let cfPositiveYear = '--', cumCFPositiveYear = '--', cumCFPlusEqYear = '--';
+            for (let i = 1; i < R.projection.length; i++) {
+                if (cfPositiveYear === '--' && R.projection[i].yCFPost > 0) cfPositiveYear = R.projection[i].year;
+                if (cumCFPositiveYear === '--' && R.projection[i].cumCF > 0) cumCFPositiveYear = R.projection[i].year;
+                if (cumCFPlusEqYear === '--' && R.projection[i].cumCF + R.projection[i].cumEq > R.equity) cumCFPlusEqYear = R.projection[i].year;
+            }
+
+            $('t-breakeven').innerHTML = `
+                <tr><td>Cashflow Positive (first)</td><td class="text-right text-mono">${cfPositiveYear}</td></tr>
+                <tr><td>Cumulative CF Positive</td><td class="text-right text-mono">${cumCFPositiveYear}</td></tr>
+                <tr><td>CF + Equity > Initial Equity</td><td class="text-right text-mono">${cumCFPlusEqYear}</td></tr>
+                <tr class="row-highlight"><td>Cumulative CF to Date</td><td class="text-right text-mono ${y.cumCF >= 0 ? 'text-success' : 'text-danger'}">${fmt(y.cumCF)}</td></tr>
+            `;
+
+            const maxInterest = R.cashflowAfterTax > 0 ? (R.cashflowAfterTax * 12 + R.totalInterest * 12) / R.totalLoan * 100 : R.weightedRate;
+            $('t-interestRisk').innerHTML = `
+                <tr><td>Current Weighted Rate</td><td class="text-right text-mono">${pct(R.weightedRate)}</td></tr>
+                <tr><td>Monthly Interest</td><td class="text-right text-mono">${fmt(R.totalInterest)}</td></tr>
+                <tr class="row-highlight"><td>Max Rate for CF=0</td><td class="text-right text-mono">${pct(maxInterest)}</td></tr>
+                <tr><td>Buffer</td><td class="text-right text-mono text-success">+${pct(Math.max(0, maxInterest - R.weightedRate))}</td></tr>
+            `;
+
+            const futureRent = y.yIncome;
+            const valueFactor20 = futureRent * 20;
+            const valueFactor25 = futureRent * 25;
+            $('t-valuation').innerHTML = `
+                <tr><td>Annual Rent (Year ${idx})</td><td class="text-right text-mono">${fmt(futureRent)}</td></tr>
+                <tr><td>Current Factor</td><td class="text-right text-mono">${R.factor.toFixed(1)}x</td></tr>
+                <tr><td>Value @ 20x Factor</td><td class="text-right text-mono">${fmt(valueFactor20)}</td></tr>
+                <tr><td>Value @ 25x Factor</td><td class="text-right text-mono">${fmt(valueFactor25)}</td></tr>
+                <tr class="row-highlight"><td>Projected Value</td><td class="text-right text-mono">${fmt(y.propertyValue)}</td></tr>
+            `;
+
+            const wealthPos = y.propertyValue - y.totalDebt - R.equity + y.cumCF;
+            $('t-wealthPos').innerHTML = `
+                <tr><td>Property Value</td><td class="text-right text-mono">${fmt(y.propertyValue)}</td></tr>
+                <tr><td>Remaining Debt</td><td class="text-right text-mono text-danger">-${fmt(y.totalDebt)}</td></tr>
+                <tr><td>Initial Equity</td><td class="text-right text-mono text-danger">-${fmt(R.equity)}</td></tr>
+                <tr><td>Cumulative Cashflow</td><td class="text-right text-mono ${y.cumCF >= 0 ? 'text-success' : 'text-danger'}">${y.cumCF >= 0 ? '+' : ''}${fmt(y.cumCF)}</td></tr>
+                <tr class="row-success"><td>Net Wealth Gain</td><td class="text-right text-mono">${fmt(wealthPos)}</td></tr>
+            `;
+
+            const loanReserve = y.propertyValue - y.totalDebt;
+            const ltvFuture = y.totalDebt / y.propertyValue * 100;
+            $('t-loanReserve').innerHTML = `
+                <tr><td>Property Value</td><td class="text-right text-mono">${fmt(y.propertyValue)}</td></tr>
+                <tr><td>Remaining Debt</td><td class="text-right text-mono">-${fmt(y.totalDebt)}</td></tr>
+                <tr class="row-highlight"><td>Equity in Property</td><td class="text-right text-mono text-success">${fmt(loanReserve)}</td></tr>
+                <tr><td>LTV Ratio</td><td class="text-right text-mono">${pct(ltvFuture, 1)}</td></tr>
+            `;
+        }
+
+        function resetForm() {
+            document.querySelectorAll('input[type="number"]').forEach(el => el.value = el.defaultValue);
+            document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = el.id === 'i-loan1-enabled');
+            document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+            calculate();
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pw = doc.internal.pageSize.getWidth();
+            const ph = doc.internal.pageSize.getHeight();
+            let y = 15;
+
+            const addHeader = () => {
+                doc.setFillColor(30, 58, 95);
+                doc.rect(0, 0, pw, 32, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Property Investment Analysis Report', 14, 14);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'normal');
+                doc.text($('i-address').value || 'Investment Property', 14, 22);
+                doc.setFontSize(9);
+                doc.text('Generated: ' + new Date().toLocaleDateString('de-DE') + ' | Rendite Pro v2.0', 14, 28);
+            };
+
+            const addSection = (title) => {
+                if (y > ph - 30) { doc.addPage(); y = 15; }
+                doc.setTextColor(30, 58, 95);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text(title, 14, y);
+                y += 5;
+                doc.setTextColor(0, 0, 0);
+            };
+
+            const addTable = (head, body, opts = {}) => {
+                doc.autoTable({
+                    startY: y,
+                    head: [head],
+                    body: body,
+                    theme: opts.theme || 'striped',
+                    headStyles: { fillColor: [30, 58, 95], fontSize: 7, cellPadding: 1.5 },
+                    styles: { fontSize: 7, cellPadding: 1.5 },
+                    columnStyles: opts.columnStyles || {},
+                    margin: { left: 14, right: 14 },
+                    ...opts
+                });
+                y = doc.lastAutoTable.finalY + 6;
+            };
+
+            // Page 1: Summary
+            addHeader();
+            y = 40;
+
+            addSection('KEY INVESTMENT METRICS');
+            addTable(
+                ['Metric', 'Value', 'Metric', 'Value', 'Metric', 'Value'],
+                [
+                    ['Gross Yield', pct(R.grossYield), 'Net Yield', pct(R.netYield), 'Price Factor', R.factor.toFixed(1) + 'x'],
+                    ['Cash-on-Cash', pct(R.coc), 'Monthly CF', fmt(R.cashflowAfterTax), 'Wealth/Year', fmt(R.wealthGrowth)]
+                ],
+                { theme: 'grid' }
+            );
+
+            addSection('PROPERTY & INVESTMENT');
+            addTable(
+                ['Property Details', '', 'Investment Breakdown', ''],
+                [
+                    ['Living Area', R.sqm + ' m²', 'Purchase Price', fmt(R.price)],
+                    ['Purchase Price', fmt(R.price), 'Acquisition Costs', fmt(R.totalAcqCosts)],
+                    ['Price per m²', fmt(R.price / R.sqm), 'Initial Investments', fmt(R.initInvest)],
+                    ['Rent per m²', fmt2(R.rentSqm), 'Total Investment', fmt(R.totalInvestment)],
+                ],
+                { columnStyles: { 1: { halign: 'right' }, 3: { halign: 'right' } } }
+            );
+
+            addSection('ACQUISITION COSTS BREAKDOWN');
+            addTable(
+                ['Cost Type', 'Rate', 'Amount'],
+                [
+                    ['Broker Fee', pct(R.broker, 2), fmt(R.brokerCost)],
+                    ['Notary Fee', pct(R.notary, 2), fmt(R.notaryCost)],
+                    ['Land Registry', pct(R.registry, 2), fmt(R.registryCost)],
+                    ['Transfer Tax', pct(R.transferTax, 2), fmt(R.transferTaxCost)],
+                    ['Other Costs', '-', fmt(R.otherCosts)],
+                    ['TOTAL', pct(R.acqCostsPct, 2), fmt(R.totalAcqCosts)],
+                ],
+                { columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } } }
+            );
+
+            addSection('MONTHLY INCOME & COSTS');
+            addTable(
+                ['Income', 'Amount', 'Non-Allocable Costs', 'Amount'],
+                [
+                    ['Cold Rent (' + R.sqm + 'm² × ' + fmt2(R.rentSqm) + ')', fmt(R.calcRent), 'Hausgeld (non-alloc)', fmt(R.hgNonAlloc)],
+                    ['Parking Income', fmt(R.parkingRent), 'WEG Reserve', fmt(R.wegReserve)],
+                    ['Net Cold Rent', fmt(R.netColdRent), 'Own Maintenance', fmt(R.ownMaintMo)],
+                    ['+ Allocable Costs', fmt(R.allocableCosts), 'Vacancy Loss', fmt(R.vacancyCost)],
+                    ['WARM RENT', fmt(R.warmRent), 'TOTAL COSTS', fmt(R.nonAllocCosts)],
+                ],
+                { columnStyles: { 1: { halign: 'right' }, 3: { halign: 'right' } } }
+            );
+
+            // Page 2: Financing & Tax
+            doc.addPage();
+            y = 15;
+
+            addSection('FINANCING STRUCTURE');
+            const loanRows = [];
+            for (let i = 0; i < 3; i++) {
+                const l = R.loans[i];
+                if (l.amt > 0) {
+                    loanRows.push([
+                        'Loan ' + (i + 1),
+                        fmt(l.amt),
+                        pct(l.rate, 2),
+                        pct(l.repay, 2),
+                        fmt(l.payment),
+                        l.payoffYears < 100 ? (new Date().getFullYear() + l.payoffYears) : '-'
+                    ]);
+                }
+            }
+            loanRows.push(['TOTAL', fmt(R.totalLoan), pct(R.weightedRate, 2), pct(R.weightedRepay, 2), fmt(R.totalPayment), '-']);
+            addTable(
+                ['Loan', 'Amount', 'Interest', 'Repayment', 'Monthly', 'Payoff'],
+                loanRows,
+                { columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } } }
+            );
+
+            addSection('EQUITY POSITION');
+            addTable(
+                ['Item', 'Amount'],
+                [
+                    ['Total Investment', fmt(R.totalInvestment)],
+                    ['Total Loans', fmt(R.totalLoan)],
+                    ['Equity Required', fmt(R.equity)],
+                    ['LTV Ratio', pct(R.ltv, 1)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            addSection('MONTHLY CASHFLOW');
+            addTable(
+                ['Item', 'Amount'],
+                [
+                    ['Warm Rent', '+' + fmt(R.warmRent)],
+                    ['Operating Costs', '-' + fmt(R.nonAllocCosts)],
+                    ['Interest Payment', '-' + fmt(R.totalInterest)],
+                    ['Principal Payment', '-' + fmt(R.totalPrincipal)],
+                    ['Operational Cashflow', fmt(R.opCashflow)],
+                    ['Tax Effect', (R.taxableCashflow < 0 ? '+' : '-') + fmt(Math.abs(R.monthlyTax))],
+                    ['CASHFLOW AFTER TAX', fmt(R.cashflowAfterTax)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            addSection('TAX CALCULATION (MONTHLY)');
+            addTable(
+                ['Item', 'Amount'],
+                [
+                    ['Warm Rent', fmt(R.warmRent)],
+                    ['Operating Costs (excl. reserve)', '-' + fmt(R.nonAllocCosts - R.ownMaintMo)],
+                    ['Interest Expense', '-' + fmt(R.totalInterest)],
+                    ['Depreciation (AfA ' + R.afaRate + '%)', '-' + fmt(R.monthlyAfa)],
+                    ['Taxable Income', fmt(R.taxableCashflow)],
+                    ['Tax Rate', pct(R.taxRate, 0)],
+                    ['Tax / (Savings)', (R.taxableCashflow < 0 ? '+' : '-') + fmt(Math.abs(R.monthlyTax))],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            addSection('DEPRECIATION (AfA)');
+            addTable(
+                ['Item', 'Value'],
+                [
+                    ['Purchase Price', fmt(R.price)],
+                    ['Building Share', pct(R.bldShare, 0)],
+                    ['Depreciation Base', fmt(R.depBase)],
+                    ['AfA Rate', pct(R.afaRate, 1)],
+                    ['Annual Depreciation', fmt(R.annualAfa)],
+                    ['Monthly Depreciation', fmt(R.monthlyAfa)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            // Page 3: 10-Year Projection
+            doc.addPage();
+            y = 15;
+
+            addSection('10-YEAR CASHFLOW PROJECTION');
+            const projHead = ['Item'];
+            for (let i = 1; i <= 10; i++) projHead.push(R.projection[i].year.toString());
+            
+            const projBody = [
+                ['Rental Income', ...R.projection.slice(1).map(y => fmt(y.yIncome))],
+                ['Operating Costs', ...R.projection.slice(1).map(y => '-' + fmt(y.yCosts))],
+                ['Interest', ...R.projection.slice(1).map(y => '-' + fmt(y.yInterest))],
+                ['Principal', ...R.projection.slice(1).map(y => '-' + fmt(y.yPrincipal))],
+                ['CF Pre-Tax', ...R.projection.slice(1).map(y => fmt(y.yCFPre))],
+                ['Depreciation', ...R.projection.slice(1).map(y => fmt(y.yAfa))],
+                ['Taxable Income', ...R.projection.slice(1).map(y => fmt(y.taxableInc))],
+                ['Tax/Savings', ...R.projection.slice(1).map(y => y.taxableInc < 0 ? '+' + fmt(y.taxSave) : '-' + fmt(y.tax))],
+                ['CF After Tax', ...R.projection.slice(1).map(y => fmt(y.yCFPost))],
+                ['Remaining Debt', ...R.projection.slice(1).map(y => fmt(y.totalDebt))],
+                ['Property Value', ...R.projection.slice(1).map(y => fmt(y.propertyValue))],
+                ['Cumulative CF', ...R.projection.slice(1).map(y => fmt(y.cumCF))],
+                ['Equity Built', ...R.projection.slice(1).map(y => fmt(y.cumEq))],
+            ];
+
+            doc.autoTable({
+                startY: y,
+                head: [projHead],
+                body: projBody,
+                theme: 'grid',
+                headStyles: { fillColor: [30, 58, 95], fontSize: 6, cellPadding: 1 },
+                styles: { fontSize: 6, cellPadding: 1, halign: 'right' },
+                columnStyles: { 0: { halign: 'left', cellWidth: 28 } },
+                margin: { left: 10, right: 10 }
+            });
+            y = doc.lastAutoTable.finalY + 8;
+
+            // Page 4: Professional Metrics
+            doc.addPage();
+            y = 15;
+
+            const futureYear = val('i-futureYear');
+            const idx = Math.min(futureYear, R.projection.length - 1);
+            const yF = R.projection[idx];
+
+            addSection('PROFESSIONAL METRICS - YEAR ' + yF.year);
+            
+            addTable(
+                ['Future Value Metrics', 'Value'],
+                [
+                    ['Analysis Year', yF.year],
+                    ['Years from Purchase', idx],
+                    ['Annual Rent', fmt(yF.yIncome)],
+                    ['Monthly Rent', fmt(yF.rent)],
+                    ['Rent per m²', fmt2(yF.rent / R.sqm)],
+                    ['Property Value', fmt(yF.propertyValue)],
+                    ['Value per m²', fmt(yF.propertyValue / R.sqm)],
+                    ['Monthly Cashflow', fmt(yF.yCFPost / 12)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            let cfPositiveYear = '--', cumCFPositiveYear = '--';
+            for (let i = 1; i < R.projection.length; i++) {
+                if (cfPositiveYear === '--' && R.projection[i].yCFPost > 0) cfPositiveYear = R.projection[i].year;
+                if (cumCFPositiveYear === '--' && R.projection[i].cumCF > 0) cumCFPositiveYear = R.projection[i].year;
+            }
+
+            addSection('BREAK-EVEN ANALYSIS');
+            addTable(
+                ['Metric', 'Year/Value'],
+                [
+                    ['First Year with Positive CF', cfPositiveYear],
+                    ['Cumulative CF Positive', cumCFPositiveYear],
+                    ['Cumulative CF at Year ' + idx, fmt(yF.cumCF)],
+                    ['Equity Built at Year ' + idx, fmt(yF.cumEq)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            const maxInterest = R.cashflowAfterTax > 0 ? (R.cashflowAfterTax * 12 + R.totalInterest * 12) / R.totalLoan * 100 : R.weightedRate;
+
+            addSection('INTEREST RATE RISK');
+            addTable(
+                ['Metric', 'Value'],
+                [
+                    ['Current Weighted Rate', pct(R.weightedRate)],
+                    ['Annual Interest Cost', fmt(R.totalInterest * 12)],
+                    ['Max Rate for CF=0', pct(maxInterest)],
+                    ['Rate Buffer', '+' + pct(Math.max(0, maxInterest - R.weightedRate))],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            addSection('VALUATION BY RENT FACTOR');
+            addTable(
+                ['Factor', 'Property Value'],
+                [
+                    ['Current Factor (' + R.factor.toFixed(1) + 'x)', fmt(R.price)],
+                    ['At 20x Factor', fmt(yF.yIncome * 20)],
+                    ['At 22x Factor', fmt(yF.yIncome * 22)],
+                    ['At 25x Factor', fmt(yF.yIncome * 25)],
+                    ['Projected (' + R.appreciation + '% p.a.)', fmt(yF.propertyValue)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            const wealthPos = yF.propertyValue - yF.totalDebt - R.equity + yF.cumCF;
+            const loanReserve = yF.propertyValue - yF.totalDebt;
+
+            addSection('WEALTH POSITION AT YEAR ' + idx);
+            addTable(
+                ['Item', 'Amount'],
+                [
+                    ['Property Value', fmt(yF.propertyValue)],
+                    ['Remaining Debt', '-' + fmt(yF.totalDebt)],
+                    ['Equity in Property', fmt(loanReserve)],
+                    ['Initial Equity Invested', '-' + fmt(R.equity)],
+                    ['Cumulative Cashflow', (yF.cumCF >= 0 ? '+' : '') + fmt(yF.cumCF)],
+                    ['NET WEALTH GAIN', fmt(wealthPos)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            addSection('ANNUAL WEALTH BUILDING');
+            addTable(
+                ['Component', 'Annual Amount'],
+                [
+                    ['Principal Paydown', fmt(R.annualPrincipal)],
+                    ['Net Cashflow', fmt(R.annualCashflow)],
+                    ['Property Appreciation (' + pct(R.appreciation, 0) + ')', fmt(R.annualAppreciation)],
+                    ['TOTAL WEALTH GROWTH', fmt(R.wealthGrowth)],
+                    ['Without Appreciation', fmt(R.wealthNoApp)],
+                ],
+                { columnStyles: { 1: { halign: 'right' } } }
+            );
+
+            // Footer on all pages
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(7);
+                doc.setTextColor(150);
+                doc.text('Rendite Pro v2.0 - German Property Investment Analysis', 14, ph - 7);
+                doc.text('Page ' + i + ' of ' + pageCount, pw - 25, ph - 7);
+                doc.setDrawColor(200);
+                doc.line(14, ph - 10, pw - 14, ph - 10);
+            }
+
+            const fileName = ($('i-address').value || 'property-analysis').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-report.pdf';
+            doc.save(fileName);
+        }
+
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', calculate);
+            el.addEventListener('input', calculate);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            $('i-date').value = new Date().toISOString().split('T')[0];
+            calculate();
+        });
+    </script>
+</body>
+</html>

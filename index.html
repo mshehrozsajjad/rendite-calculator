@@ -15,6 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e3a5f' rx='15' width='100' height='100'/><text y='.9em' x='50%' text-anchor='middle' font-size='70'>🏠</text></svg>">
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -54,6 +55,7 @@
             <div class="tab" data-tab="inputs">Property & Costs</div>
             <div class="tab" data-tab="financing">Financing</div>
             <div class="tab" data-tab="projection">10-Year Projection</div>
+            <div class="tab" data-tab="charts">Charts</div>
             <div class="tab" data-tab="professional">Professional Metrics</div>
         </div>
 
@@ -242,8 +244,8 @@
                                     <input type="number" class="form-input" id="i-rentSqm" value="11.5" step="0.1">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Calculated Rent</label>
-                                    <div class="text-mono" id="d-calcRent">0 €</div>
+                                    <label class="form-label">Total Cold Rent (€/mo)</label>
+                                    <input type="number" class="form-input" id="i-totalColdRent" value="954.5" step="10">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -407,7 +409,44 @@
 
             <!-- FINANCING TAB -->
             <div class="tab-content" id="tab-financing">
-                <div class="grid-cols-3 mb-2">
+                <div class="grid-cols-4 mb-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Your Equity</div></div>
+                        <div class="card-body card-body-full">
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Equity Amount (€)</label>
+                                    <input type="number" class="form-input" id="i-equity" value="28886" step="1000">
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Total Investment</label>
+                                    <div class="text-mono" id="d-totalInvestmentFin">0 €</div>
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Required Loan</label>
+                                    <div class="text-mono text-warning" id="d-requiredLoan">0 €</div>
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">LTV Ratio</label>
+                                    <div class="text-mono" id="d-ltvRatio">0%</div>
+                                </div>
+                            </div>
+                            <div class="form-row form-row-1">
+                                <div class="form-group">
+                                    <label class="form-label">Equity Ratio</label>
+                                    <div class="text-mono text-success" id="d-equityRatio">0%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card">
                         <div class="card-header">
                             <div class="card-title">Loan 1 (Primary)</div>
@@ -419,11 +458,11 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Loan Amount (€)</label>
-                                    <input type="number" class="form-input" id="i-loan1-amount" value="273000" step="1000">
+                                    <div class="text-mono" id="d-loan1-amount">0 €</div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">% of Purchase</label>
-                                    <div class="text-mono" id="d-loan1-pct">100%</div>
+                                    <label class="form-label">% of Total Loan</label>
+                                    <input type="number" class="form-input" id="i-loan1-pct" value="100" step="1" min="0" max="100">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -461,11 +500,11 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Loan Amount (€)</label>
-                                    <input type="number" class="form-input" id="i-loan2-amount" value="0" step="1000">
+                                    <div class="text-mono" id="d-loan2-amount">0 €</div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">% of Purchase</label>
-                                    <div class="text-mono" id="d-loan2-pct">0%</div>
+                                    <label class="form-label">% of Total Loan</label>
+                                    <input type="number" class="form-input" id="i-loan2-pct" value="0" step="1" min="0" max="100">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -503,11 +542,11 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Loan Amount (€)</label>
-                                    <input type="number" class="form-input" id="i-loan3-amount" value="0" step="1000">
+                                    <div class="text-mono" id="d-loan3-amount">0 €</div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">% of Purchase</label>
-                                    <div class="text-mono" id="d-loan3-pct">0%</div>
+                                    <label class="form-label">% of Total Loan</label>
+                                    <input type="number" class="form-input" id="i-loan3-pct" value="0" step="1" min="0" max="100">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -560,6 +599,38 @@
                                 <thead id="proj-head"></thead>
                                 <tbody id="proj-body"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS TAB -->
+            <div class="tab-content" id="tab-charts">
+                <div class="grid-cols-2 mb-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Annual Cashflow (10 Years)</div></div>
+                        <div class="card-body card-body-full" style="height: 300px;">
+                            <canvas id="chart-cashflow"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Wealth Building Components</div></div>
+                        <div class="card-body card-body-full" style="height: 300px;">
+                            <canvas id="chart-wealth"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid-cols-2">
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Debt vs Equity Over Time</div></div>
+                        <div class="card-body card-body-full" style="height: 300px;">
+                            <canvas id="chart-debt-equity"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><div class="card-title">Property Value vs Remaining Debt</div></div>
+                        <div class="card-body card-body-full" style="height: 300px;">
+                            <canvas id="chart-value-debt"></canvas>
                         </div>
                     </div>
                 </div>

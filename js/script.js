@@ -1,4 +1,5 @@
 let R = {};
+let charts = {};
 
 const $ = id => document.getElementById(id);
 const val = id => parseFloat($(id)?.value) || 0;
@@ -7,14 +8,60 @@ const fmt = n => new Intl.NumberFormat('de-DE', { style: 'currency', currency: '
 const fmt2 = n => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const pct = (n, d=2) => n.toFixed(d) + '%';
 
+// Track which rent field was last edited
+let lastRentEdit = 'sqm';
+
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         tab.classList.add('active');
         $('tab-' + tab.dataset.tab).classList.add('active');
+
+        // Update charts when Charts tab is shown
+        if (tab.dataset.tab === 'charts') {
+            updateCharts();
+        }
     });
 });
+
+// Rent field sync handlers
+function setupRentSync() {
+    const rentSqmInput = $('i-rentSqm');
+    const totalColdRentInput = $('i-totalColdRent');
+
+    rentSqmInput.addEventListener('input', () => {
+        lastRentEdit = 'sqm';
+        const sqm = val('i-sqm');
+        const rentSqm = val('i-rentSqm');
+        if (sqm > 0) {
+            totalColdRentInput.value = (sqm * rentSqm).toFixed(2);
+        }
+    });
+
+    totalColdRentInput.addEventListener('input', () => {
+        lastRentEdit = 'total';
+        const sqm = val('i-sqm');
+        const totalRent = val('i-totalColdRent');
+        if (sqm > 0) {
+            rentSqmInput.value = (totalRent / sqm).toFixed(2);
+        }
+    });
+
+    // When sqm changes, update the appropriate field
+    $('i-sqm').addEventListener('input', () => {
+        const sqm = val('i-sqm');
+        if (sqm > 0) {
+            if (lastRentEdit === 'sqm') {
+                const rentSqm = val('i-rentSqm');
+                totalColdRentInput.value = (sqm * rentSqm).toFixed(2);
+            } else {
+                const totalRent = val('i-totalColdRent');
+                rentSqmInput.value = (totalRent / sqm).toFixed(2);
+            }
+        }
+    });
+}
 
 function calculate() {
     const sqm = val('i-sqm');
@@ -40,8 +87,9 @@ function calculate() {
     const totalInvestment = price + totalAcqCosts + initInvest;
     const limit15 = price * 0.15;
 
+    // Use the total cold rent directly (it's synced with rent per sqm)
     const rentSqm = val('i-rentSqm');
-    const calcRent = sqm * rentSqm;
+    const calcRent = val('i-totalColdRent');
     const parkingRent = val('i-parkingRent');
     const otherIncome = val('i-otherIncome');
     const netColdRent = calcRent + parkingRent + otherIncome;
@@ -71,19 +119,30 @@ function calculate() {
     const rentInc = val('i-rentInc');
     const appreciation = val('i-appreciation');
 
+    // New equity-based loan calculation
+    const equity = val('i-equity');
+    const requiredLoan = Math.max(0, totalInvestment - equity);
+
+    // Get loan percentages and calculate loan amounts
+    const loan1Pct = chk('i-loan1-enabled') ? val('i-loan1-pct') : 0;
+    const loan2Pct = chk('i-loan2-enabled') ? val('i-loan2-pct') : 0;
+    const loan3Pct = chk('i-loan3-enabled') ? val('i-loan3-pct') : 0;
+    const totalPct = loan1Pct + loan2Pct + loan3Pct;
+
     const loans = [];
     for (let i = 1; i <= 3; i++) {
-        if (chk(`i-loan${i}-enabled`)) {
-            const amt = val(`i-loan${i}-amount`);
+        if (chk(`i-loan${i}-enabled`) && totalPct > 0) {
+            const loanPct = val(`i-loan${i}-pct`);
+            const amt = requiredLoan * (loanPct / totalPct);
             const rate = val(`i-loan${i}-rate`);
             const repay = val(`i-loan${i}-repay`);
             const payment = amt * (rate + repay) / 100 / 12;
             const interest = amt * rate / 100 / 12;
             const principal = amt * repay / 100 / 12;
             const payoffYears = repay > 0 ? Math.ceil(100 / repay) : 999;
-            loans.push({ amt, rate, repay, payment, interest, principal, payoffYears });
+            loans.push({ amt, rate, repay, payment, interest, principal, payoffYears, pct: loanPct });
         } else {
-            loans.push({ amt: 0, rate: 0, repay: 0, payment: 0, interest: 0, principal: 0, payoffYears: 0 });
+            loans.push({ amt: 0, rate: 0, repay: 0, payment: 0, interest: 0, principal: 0, payoffYears: 0, pct: 0 });
         }
     }
 
@@ -93,8 +152,8 @@ function calculate() {
     const totalPrincipal = loans.reduce((s, l) => s + l.principal, 0);
     const weightedRate = totalLoan > 0 ? loans.reduce((s, l) => s + l.amt * l.rate, 0) / totalLoan : 0;
     const weightedRepay = totalLoan > 0 ? loans.reduce((s, l) => s + l.amt * l.repay, 0) / totalLoan : 0;
-    const equity = totalInvestment - totalLoan;
-    const ltv = totalLoan / totalInvestment * 100;
+    const ltv = totalInvestment > 0 ? totalLoan / totalInvestment * 100 : 0;
+    const equityRatio = totalInvestment > 0 ? equity / totalInvestment * 100 : 0;
 
     const opCashflow = netColdRent - nonAllocCosts - totalPayment;
     const taxableCashflow = warmRent - (nonAllocCosts - ownMaintMo) - totalInterest - monthlyAfa;
@@ -120,7 +179,7 @@ function calculate() {
         hgNonAlloc, wegReserve, ownMaintMo, vacancyCost, otherNonAlloc,
         afaRate, bldShare, depBase, annualAfa, monthlyAfa, taxRate,
         costInc, rentInc, appreciation,
-        loans, totalLoan, totalPayment, totalInterest, totalPrincipal, weightedRate, weightedRepay, equity, ltv,
+        loans, totalLoan, totalPayment, totalInterest, totalPrincipal, weightedRate, weightedRepay, equity, ltv, equityRatio, requiredLoan,
         opCashflow, taxableCashflow, monthlyTax, cashflowAfterTax,
         grossYield, netYield, factor, coc, annualRent,
         wealthGrowth, wealthNoApp, annualPrincipal, annualCashflow, annualAppreciation,
@@ -135,16 +194,21 @@ function calculate() {
 function updateUI() {
     $('d-initInvest').textContent = fmt(R.initInvest);
     $('d-15limit').textContent = fmt(R.limit15);
-    $('d-calcRent').textContent = fmt(R.calcRent);
     $('d-netColdRent').textContent = fmt(R.netColdRent);
     $('d-allocable').textContent = fmt(R.allocableCosts);
     $('d-warmRent').textContent = fmt(R.warmRent);
     $('d-depBase').textContent = fmt(R.depBase);
     $('d-annualAfa').textContent = fmt(R.annualAfa) + '/yr';
 
+    // Update equity/financing displays
+    $('d-totalInvestmentFin').textContent = fmt(R.totalInvestment);
+    $('d-requiredLoan').textContent = fmt(R.requiredLoan);
+    $('d-ltvRatio').textContent = pct(R.ltv, 1);
+    $('d-equityRatio').textContent = pct(R.equityRatio, 1);
+
     for (let i = 1; i <= 3; i++) {
         const l = R.loans[i-1];
-        $(`d-loan${i}-pct`).textContent = pct(R.price > 0 ? l.amt / R.price * 100 : 0, 1);
+        $(`d-loan${i}-amount`).textContent = fmt(l.amt);
         $(`d-loan${i}-payment`).textContent = fmt(l.payment);
         $(`d-loan${i}-payoff`).textContent = l.payoffYears > 0 && l.payoffYears < 100 ? (new Date().getFullYear() + l.payoffYears) : '--';
     }
@@ -178,8 +242,9 @@ function updateUI() {
 
     $('t-equity').innerHTML = `
         <tr><td>Total Investment</td><td class="text-right text-mono">${fmt(R.totalInvestment)}</td></tr>
+        <tr><td>Your Equity</td><td class="text-right text-mono">${fmt(R.equity)}</td></tr>
         <tr><td>Total Loans</td><td class="text-right text-mono">${fmt(R.totalLoan)}</td></tr>
-        <tr class="row-total"><td>Equity Required</td><td class="text-right text-mono">${fmt(R.equity)}</td></tr>
+        <tr class="row-total"><td>Equity Ratio</td><td class="text-right text-mono">${pct(R.equityRatio, 1)}</td></tr>
         <tr><td>LTV Ratio</td><td class="text-right text-mono">${pct(R.ltv, 1)}</td></tr>
     `;
 
@@ -280,7 +345,7 @@ function generateProjection() {
         const warmRent = rent + R.allocableCosts;
         const yIncome = rent * 12;
         const yCosts = costs * 12;
-        
+
         let yInterest = 0, yPrincipal = 0;
         for (let j = 0; j < 3; j++) {
             if (loanBalances[j] > 0) {
@@ -324,7 +389,7 @@ function generateProjection() {
         return r + '</tr>';
     };
 
-    $('proj-body').innerHTML = 
+    $('proj-body').innerHTML =
         row('Rental Income', y => fmt(y.yIncome)) +
         row('Operating Costs', y => `<span class="text-danger">-${fmt(y.yCosts)}</span>`) +
         row('Interest', y => `<span class="text-danger">-${fmt(y.yInterest)}</span>`) +
@@ -342,6 +407,195 @@ function generateProjection() {
     const y10 = years[10];
     $('b-projection').textContent = y10.yCFPost >= 0 ? 'Positive CF' : 'Negative CF';
     $('b-projection').className = 'badge ' + (y10.yCFPost >= 0 ? 'badge-success' : 'badge-danger');
+}
+
+function updateCharts() {
+    if (!R.projection || R.projection.length === 0) return;
+
+    const years = R.projection.slice(1).map(y => y.year);
+    const chartColors = {
+        success: '#059669',
+        danger: '#dc2626',
+        warning: '#d97706',
+        accent: '#0369a1',
+        muted: '#9ca3af',
+        primary: '#1e3a5f'
+    };
+
+    // Chart 1: Annual Cashflow
+    const cashflowCtx = $('chart-cashflow');
+    if (charts.cashflow) charts.cashflow.destroy();
+    charts.cashflow = new Chart(cashflowCtx, {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Pre-Tax Cashflow',
+                data: R.projection.slice(1).map(y => y.yCFPre),
+                backgroundColor: chartColors.accent + '80',
+                borderColor: chartColors.accent,
+                borderWidth: 1
+            }, {
+                label: 'After-Tax Cashflow',
+                data: R.projection.slice(1).map(y => y.yCFPost),
+                backgroundColor: R.projection.slice(1).map(y => y.yCFPost >= 0 ? chartColors.success + '80' : chartColors.danger + '80'),
+                borderColor: R.projection.slice(1).map(y => y.yCFPost >= 0 ? chartColors.success : chartColors.danger),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: value => fmt(value)
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart 2: Wealth Building Components (Stacked Bar)
+    const wealthCtx = $('chart-wealth');
+    if (charts.wealth) charts.wealth.destroy();
+    charts.wealth = new Chart(wealthCtx, {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Principal Paydown',
+                data: R.projection.slice(1).map(y => y.yPrincipal),
+                backgroundColor: chartColors.success,
+                stack: 'wealth'
+            }, {
+                label: 'Net Cashflow',
+                data: R.projection.slice(1).map(y => y.yCFPost),
+                backgroundColor: chartColors.accent,
+                stack: 'wealth'
+            }, {
+                label: 'Appreciation',
+                data: R.projection.slice(1).map((y, i) => {
+                    const prevValue = i === 0 ? R.price : R.projection[i].propertyValue;
+                    return y.propertyValue - prevValue;
+                }),
+                backgroundColor: chartColors.warning,
+                stack: 'wealth'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                x: { stacked: true },
+                y: {
+                    stacked: true,
+                    ticks: {
+                        callback: value => fmt(value)
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart 3: Debt vs Equity Built
+    const debtEquityCtx = $('chart-debt-equity');
+    if (charts.debtEquity) charts.debtEquity.destroy();
+    charts.debtEquity = new Chart(debtEquityCtx, {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Remaining Debt',
+                data: R.projection.slice(1).map(y => y.totalDebt),
+                borderColor: chartColors.danger,
+                backgroundColor: chartColors.danger + '20',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Equity Built (Cumulative)',
+                data: R.projection.slice(1).map(y => y.cumEq),
+                borderColor: chartColors.success,
+                backgroundColor: chartColors.success + '20',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Initial Equity',
+                data: R.projection.slice(1).map(() => R.equity),
+                borderColor: chartColors.muted,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: value => fmt(value)
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart 4: Property Value vs Debt
+    const valueDebtCtx = $('chart-value-debt');
+    if (charts.valueDebt) charts.valueDebt.destroy();
+    charts.valueDebt = new Chart(valueDebtCtx, {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Property Value',
+                data: R.projection.slice(1).map(y => y.propertyValue),
+                borderColor: chartColors.success,
+                backgroundColor: chartColors.success + '20',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Remaining Debt',
+                data: R.projection.slice(1).map(y => y.totalDebt),
+                borderColor: chartColors.danger,
+                backgroundColor: chartColors.danger + '20',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Net Equity Position',
+                data: R.projection.slice(1).map(y => y.propertyValue - y.totalDebt),
+                borderColor: chartColors.accent,
+                borderWidth: 3,
+                fill: false,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: value => fmt(value)
+                    }
+                }
+            }
+        }
+    });
 }
 
 function updateProfessional() {
@@ -416,6 +670,7 @@ function resetForm() {
     document.querySelectorAll('input[type="number"]').forEach(el => el.value = el.defaultValue);
     document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = el.id === 'i-loan1-enabled');
     document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+    lastRentEdit = 'sqm';
     calculate();
 }
 
@@ -549,8 +804,9 @@ function downloadPDF() {
         ['Item', 'Amount'],
         [
             ['Total Investment', fmt(R.totalInvestment)],
+            ['Your Equity', fmt(R.equity)],
             ['Total Loans', fmt(R.totalLoan)],
-            ['Equity Required', fmt(R.equity)],
+            ['Equity Ratio', pct(R.equityRatio, 1)],
             ['LTV Ratio', pct(R.ltv, 1)],
         ],
         { columnStyles: { 1: { halign: 'right' } } }
@@ -607,7 +863,7 @@ function downloadPDF() {
     addSection('10-YEAR CASHFLOW PROJECTION');
     const projHead = ['Item'];
     for (let i = 1; i <= 10; i++) projHead.push(R.projection[i].year.toString());
-    
+
     const projBody = [
         ['Rental Income', ...R.projection.slice(1).map(y => fmt(y.yIncome))],
         ['Operating Costs', ...R.projection.slice(1).map(y => '-' + fmt(y.yCosts))],
@@ -636,7 +892,61 @@ function downloadPDF() {
     });
     y = doc.lastAutoTable.finalY + 8;
 
-    // Page 4: Professional Metrics
+    // Page 4: Charts Data (Wealth Building & Equity Analysis)
+    doc.addPage();
+    y = 15;
+
+    addSection('ANNUAL CASHFLOW ANALYSIS');
+    const cashflowHead = ['Year', 'Rental Income', 'Operating Costs', 'Loan Payment', 'Pre-Tax CF', 'After-Tax CF'];
+    const cashflowBody = R.projection.slice(1).map(yr => [
+        yr.year,
+        fmt(yr.yIncome),
+        fmt(yr.yCosts),
+        fmt(yr.yInterest + yr.yPrincipal),
+        fmt(yr.yCFPre),
+        fmt(yr.yCFPost)
+    ]);
+    addTable(cashflowHead, cashflowBody, {
+        columnStyles: { 0: { halign: 'center' }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
+    });
+
+    addSection('WEALTH BUILDING COMPONENTS (ANNUAL)');
+    const wealthHead = ['Year', 'Principal Paydown', 'Net Cashflow', 'Appreciation', 'Total Wealth'];
+    const wealthBody = R.projection.slice(1).map((yr, i) => {
+        const prevValue = i === 0 ? R.price : R.projection[i].propertyValue;
+        const appreciation = yr.propertyValue - prevValue;
+        const totalWealth = yr.yPrincipal + yr.yCFPost + appreciation;
+        return [
+            yr.year,
+            fmt(yr.yPrincipal),
+            fmt(yr.yCFPost),
+            fmt(appreciation),
+            fmt(totalWealth)
+        ];
+    });
+    addTable(wealthHead, wealthBody, {
+        columnStyles: { 0: { halign: 'center' }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
+    });
+
+    addSection('DEBT VS EQUITY POSITION');
+    const debtEquityHead = ['Year', 'Property Value', 'Remaining Debt', 'Equity in Property', 'LTV Ratio', 'Cumulative CF'];
+    const debtEquityBody = R.projection.slice(1).map(yr => {
+        const equityInProperty = yr.propertyValue - yr.totalDebt;
+        const ltvRatio = yr.propertyValue > 0 ? (yr.totalDebt / yr.propertyValue * 100) : 0;
+        return [
+            yr.year,
+            fmt(yr.propertyValue),
+            fmt(yr.totalDebt),
+            fmt(equityInProperty),
+            pct(ltvRatio, 1),
+            fmt(yr.cumCF)
+        ];
+    });
+    addTable(debtEquityHead, debtEquityBody, {
+        columnStyles: { 0: { halign: 'center' }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
+    });
+
+    // Page 5: Professional Metrics
     doc.addPage();
     y = 15;
 
@@ -645,7 +955,7 @@ function downloadPDF() {
     const yF = R.projection[idx];
 
     addSection('PROFESSIONAL METRICS - YEAR ' + yF.year);
-    
+
     addTable(
         ['Future Value Metrics', 'Value'],
         [
@@ -759,5 +1069,6 @@ document.querySelectorAll('input, select').forEach(el => {
 
 document.addEventListener('DOMContentLoaded', () => {
     $('i-date').value = new Date().toISOString().split('T')[0];
+    setupRentSync();
     calculate();
 });
